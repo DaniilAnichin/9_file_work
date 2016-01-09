@@ -183,7 +183,7 @@ int deleting(FILE* data, int num_line)
 
     fseek(data, MARK_LEN + (num_line - 1) * (STR_LEN + 1), SEEK_SET);
 
-    for(num_line = 1; num_line < last_line + 1; num_line++)
+    for(num_line; num_line < last_line; num_line++)
     {
         temp_product = product_read(data, num_line + 1);
         product_write(data, num_line, temp_product);

@@ -28,6 +28,8 @@ int start_run();
 
 int file_run(FILE* data);
 
+void alert(char* reason);
+
 int main(void)
 {
     start_run();
@@ -122,7 +124,7 @@ int start_run()
             strcat(full_path, path);
 
             if(!file_exist(full_path))
-                puts("\tNo such file or directory;");
+                alert("\tNo such file or directory;");
             else
             {
                 work_file = file_open(full_path);
@@ -140,7 +142,7 @@ int start_run()
             strcat(full_path, path);
 
             if(!file_exist(full_path))
-                puts("\tNo such file or directory;");
+                alert("\tNo such file or directory;");
             else
             {
                 work_file = file_open(full_path);
@@ -158,10 +160,10 @@ int start_run()
             strcat(full_path, path);
 
             if(!file_exist(full_path))
-                puts("\tNo such file or directory;");
+                alert("\tNo such file or directory;");
             else
                 if(remove(full_path))
-                    puts("\tUnable to delete this file;");
+                    alert("\tUnable to delete this file;");
         }
             break;
         case '5':
@@ -234,11 +236,11 @@ int file_run(FILE* data)
         case '3':
         {
             puts("Input the name of the product to edit:");
-            string_input(stdin, PATH_LEN, work_name, 0);
+            string_input(stdin, NAM_LEN, work_name, 0);
 
             work_line = name_find(data, work_name);
             if(!work_line)
-                puts("\tNo such product;");
+                alert("\tNo such product;");
             else
             {
                 work_product = product_read(data, work_line);
@@ -256,11 +258,11 @@ int file_run(FILE* data)
         case '5':
         {
             puts("Input the name of the product to delete:");
-            string_input(stdin, PATH_LEN, work_name, 0);
+            string_input(stdin, NAM_LEN, work_name, 0);
 
             work_line = name_find(data, work_name);
             if(!work_line)
-                puts("\tNo such product;");
+                alert("\tNo such product;");
             else
                 deleting(data, work_line);
         }
@@ -276,6 +278,13 @@ int file_run(FILE* data)
     }while(!exit);
 
     return menu_symb[0] - '0';
+}
+
+void alert(char* reason)
+{
+    puts(reason);
+    puts("Press any key to go back");
+    getch();
 }
 
 /*
