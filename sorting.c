@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include "sorting.h"
+#include "product.h"
 #include "input_check.h"
 #include "my_conio.h"
 
@@ -19,123 +21,54 @@
 #define MARK "~=Simple C data file from 9-th lab. work=~01\n"
 
 #define MARK_LEN (int)strlen(MARK)
-#define NAM_LEN 40
-#define PRI_LEN 13
-#define NUM_LEN 3
-#define STR_LEN 80
 
-#define NAME_F 0
-#define PRICE_F 1
-#define NUMB_F 2
-
-#define TEMPLATE "|  %40s  | $  %le  | x  %d  |"
+#define RTEMPLATE "|  %40s  | $  %le  | x  %d  |\n"
+#define WTEMPLATE "|  %-40s  | $  %.11e  | x  %3d  |\n"
 #define HEADER "|  Name of the product:                      |    Price:             | Number: |"
 
 
-typedef struct
+product* product_read(FILE* data, int num_line)
 {
-    char* name;
-    double price;
-    int number;
-}product;
+    product* work_product = NULL;
 
+    char buffer[STR_LEN + 1];
 
-product product_input()
-{
-    product _product;
+    char name[NAM_LEN + 1];
+    double price = 0;
+    int number = 0;
 
-    char* _name = (char*)calloc(NAM_LEN + 1, sizeof(char));
-    double _price = 0;
-    int _number = 0;
-
-    int errors = 0;
-
-    printf("Input the name of the product"
-           "(space, slash and backslash are forbidden):\n");
-    do
-    {
-        string_input(stdin, NAM_LEN + 1, _name, 0);
-        if((errors = (strpbrk(_name, ESCAPE_SEQ) != NULL)))
-            printf("\tTry again, incorrect symbols\n");
-    }while(errors);
-
-    printf("Input the price of the single product:\n");
-    _price = double_input(0, 9999);
-
-    printf("Input the number of this product:\n");
-    _number = integer_input(0, 999);
-
-
-    _product.name = _name;
-    _product.price = _price;
-    _product.number = _number;
-
-    return _product;
-}
-
-
-void product_output(product to_output)
-{
-    printf("|  ");
-    printf("%-*.*s", NAM_LEN, NAM_LEN, to_output.name);
-    printf("  | $  ");
-    printf("%*.*le", PRI_LEN, PRI_LEN - 2, to_output.price);
-    printf("  | x  ");
-    printf("%*d", NUM_LEN, to_output.number);
-    printf("  |");
-    printf("\n");
-}
-
-
-product product_read(FILE* data, int num_line)
-{
-    product to_read;
-
-    char* _name = (char*)calloc(NAM_LEN + 1, sizeof(char));
-    double _price = 0;
-    int _number = 0;
 
     int scanf_res = 0;
 
     fseek(data, MARK_LEN + (num_line - 1) * (STR_LEN + 1), SEEK_SET);
+    fgets(buffer, STR_LEN + 1, data);
+    scanf_res = sscanf(buffer, RTEMPLATE, name, &price, &number);
 
-    scanf_res = fscanf(data, TEMPLATE, _name, &_price, &_number);
+//    scanf_res = fscanf(data, RTEMPLATE, name, &price, &number);
 
-    if(!(scanf_res == 3 && scanf_res != EOF))
-       printf("0");
+    assert(scanf_res == 3 && scanf_res != EOF);
 
-    to_read.name = _name;
-    to_read.price = _price;
-    to_read.number = _number;
+    work_product = product_create(name, price, number);
 
-    return to_read;
+    return work_product;
 }
 
 
-void product_write(FILE* data, int num_line, product to_write)
+void product_write(FILE* data, int num_line, product* to_write)
 {
-    /* Writes product data to the file, like
-|  NameNameNameNameNameNameNameNameNameName  | $  PricePricePricePr  | x  Num  |
-    */
-
+//  Writes product data to the file, with lenght up to 80 symbols, like
+//|  Name...  | $  Price..  | x  Number  |
     fseek(data, MARK_LEN + (num_line - 1) * (STR_LEN + 1), SEEK_SET);
 
-    fprintf(data, "|  ");
-    fprintf(data, "%-*.*s", NAM_LEN, NAM_LEN, to_write.name);
-    fprintf(data, "  | $  ");
-    fprintf(data, "%*.*e", PRI_LEN, PRI_LEN - 2, to_write.price);
-    fprintf(data, "  | x  ");
-    fprintf(data, "%*d", NUM_LEN, to_write.number);
-    fprintf(data, "  |");
-    fprintf(data, "\n");
+    fprintf(data, WTEMPLATE, to_write->name, to_write->price, to_write->number);
 
     fflush(data);
 }
 
 
-product product_edit(product to_edit)
+product* product_update(product* old_product)
 {
-    char* new_name = (char*)calloc(NAM_LEN + 1, sizeof(char));
+    char new_name[NAM_LEN + 1];
     double new_price = 0;
     int new_number = 0;
 
@@ -167,21 +100,21 @@ product product_edit(product to_edit)
                 if((errors = (strpbrk(new_name, ESCAPE_SEQ) != NULL)))
                     printf("\tTry again, incorrect symbols\n");
             }while(errors);
-            to_edit.name = new_name;
+            old_product->name = new_name;
         }
             break;
         case 'p':
         {
             printf("Input the price of the single product:\n");
             new_price = double_input(0, 9999);
-            to_edit.price = new_price;
+            old_product->price = new_price;
         }
             break;
         case 'n':
         {
             printf("Input the number of this product:\n");
             new_number = integer_input(0, 999);
-            to_edit.number = new_number;
+            old_product->number = new_number;
         }
             break;
         }
@@ -196,7 +129,7 @@ product product_edit(product to_edit)
         }while(incorrect_choice);
     }
 
-    return to_edit;
+    return old_product;
 }
 
 
@@ -208,14 +141,15 @@ long get_last_line(FILE* data)
 
     fseek(data, 0L, SEEK_END);
     fgetpos(data, &end_pos);
-    last_line = (end_pos.__pos - MARK_LEN) / STR_LEN;
+    last_line = (end_pos.__pos - MARK_LEN) / (STR_LEN + 1);
 
     return last_line;
 }
 
-int insertion(FILE* data, int num_line, product to_insert)
+int insertion(FILE* data, int num_line, product* to_insert)
 {
-    product temp_prod;
+    // What about error return?
+    product* temp_product = NULL;
 
     long last_line = 0;
 
@@ -223,12 +157,15 @@ int insertion(FILE* data, int num_line, product to_insert)
 
     while(last_line >= num_line)
     {
-        temp_prod = product_read(data, last_line);
-        product_write(data, last_line + 1, temp_prod);
+        temp_product = product_read(data, last_line);
+        product_write(data, last_line + 1, temp_product);
         last_line--;
     }
 
     product_write(data, num_line, to_insert);
+
+    if(temp_product)
+        product_destroy(temp_product);
 
     return 0;
 }
@@ -236,7 +173,7 @@ int insertion(FILE* data, int num_line, product to_insert)
 
 int deleting(FILE* data, int num_line)
 {
-    product temp_prod;
+    product* temp_product = NULL;
 
     fpos_t end_pos;
 
@@ -248,8 +185,8 @@ int deleting(FILE* data, int num_line)
 
     for(num_line = 1; num_line < last_line + 1; num_line++)
     {
-        temp_prod = product_read(data, num_line + 1);
-        product_write(data, num_line, temp_prod);
+        temp_product = product_read(data, num_line + 1);
+        product_write(data, num_line, temp_product);
     }
 
     fseek(data, MARK_LEN + (num_line - 1) * (STR_LEN + 1), SEEK_SET);
@@ -257,13 +194,15 @@ int deleting(FILE* data, int num_line)
 
     ftruncate(fileno(data), end_pos.__pos);
 
+    product_destroy(temp_product);
+
     return 0;
 }
 
 
-int name_exist(FILE* data, char* name)
+int name_find(FILE* data, char* name)
 {
-    product to_compare;
+    product* check_product = NULL;
 
     long last_line = 0;
 
@@ -274,11 +213,13 @@ int name_exist(FILE* data, char* name)
 
     for(num_line = 1; num_line < last_line + 1; num_line++)
     {
-        to_compare = product_read(data, num_line);
-        is_exist += !strcmp(name, to_compare.name);
-        if(is_exist)
-            return is_exist;
+        check_product = product_read(data, num_line);
+        if(!strcmp(name, check_product->name))
+            is_exist = num_line;
     }
+
+    if(check_product)
+        product_destroy(check_product);
 
     return is_exist;
 }
@@ -305,9 +246,9 @@ int compare(product* first_prod, product* second_prod, int field)
 }
 
 
-int sorted_insert(FILE* data, product to_insert)
+int sorted_insert(FILE* data, product* to_insert)
 {
-    product to_compare;
+    product* check_product = NULL;
 
     long last_line = 0;
 
@@ -326,12 +267,15 @@ int sorted_insert(FILE* data, product to_insert)
 
     for(num_line = 1; num_line < last_line + 1; num_line++)
     {
-        to_compare = product_read(data, num_line);
-        is_upper = compare(&to_insert, &to_compare, field);
+        check_product = product_read(data, num_line);
+        is_upper = compare(to_insert, check_product, field);
 
         if(is_upper * to_upper > 0)
             return insertion(data, num_line, to_insert);
     }
+
+    if(check_product)
+        product_destroy(check_product);
 
     return insertion(data, last_line + 1, to_insert);
 }
@@ -339,8 +283,8 @@ int sorted_insert(FILE* data, product to_insert)
 
 void sorting(FILE* data, int field, int to_upper)
 {
-    product first_prod;
-    product second_prod;
+    product* first_product = NULL;
+    product* second_product = NULL;
 
     long last_line = 0;
 
@@ -358,29 +302,34 @@ void sorting(FILE* data, int field, int to_upper)
     for(i = 1; i < last_line; i++)
         for(j = i; j < last_line + 1; j++)
         {
-            first_prod = product_read(data, i);
-            second_prod = product_read(data, j);
-            is_upper = compare(&first_prod, &second_prod, field);
+            first_product = product_read(data, i);
+            second_product = product_read(data, j);
+            is_upper = compare(first_product, second_product, field);
 
             if(is_upper * to_upper < 0)
             {
-                product_write(data, j, first_prod);
-                product_write(data, i, second_prod);
+                product_write(data, j, first_product);
+                product_write(data, i, second_product);
             }
 
         }
+
+    product_destroy(first_product);
+    product_destroy(second_product);
 }
 
 
 void random_fill(FILE* data, int num_line)
 {
-    product temp_prod;
+    product* temp_product = NULL;
+
+    char name[STR_LEN + 1];
+    double price = 0;
+    int number = 0;
 
     int line = 0;
     int letter = 0;
     int is_uniq = 0;
-
-    temp_prod.name = (char*)calloc(STR_LEN, sizeof(char));
 
     srand(time(NULL));
 
@@ -391,27 +340,62 @@ void random_fill(FILE* data, int num_line)
         while(!is_uniq)
         {
             for(letter = 0; letter < 10; letter++)
-                temp_prod.name[letter] = rand() % 26 + (int)'a';
-            is_uniq = !name_exist(data, temp_prod.name);
+                name[letter] = rand() % 26 + (int)'a';
+            name[letter] = '\0';
+            is_uniq = !name_find(data, name);
         }
 
-        temp_prod.price = (rand() % 9999) / (double)(rand() % 10 + 1);
-        temp_prod.number = rand() % 999;
+        price = (rand() % 9999) / (double)(rand() % 10 + 1);
+        number = rand() % 999;
 
-        sorted_insert(data, temp_prod);
+        temp_product = product_create(name, price, number);
+
+        sorted_insert(data, temp_product);
     }
-    free(temp_prod.name);
+
+    product_destroy(temp_product);
 }
 
 
 int file_read(FILE* data)
 {
-    product temp_prod;
+    product* temp_product = NULL;
 
     long last_line = 0;
     long num_line = 0;
+    int errors = 0;
+
+    last_line = get_last_line(data);
+
+    // which file?
+    puts(HEADER);
+    putc('\n', stdout);
 
     for(num_line = 1; num_line < last_line + 1; num_line++)
-    {}
-    return 0;
+    {
+        temp_product = product_read(data, num_line);
+
+        if(!temp_product)
+        {
+            errors = 1;
+            break;
+        }
+        product_output(temp_product);
+
+        if(!(num_line % 20))
+        {
+            puts("Press any key to continue;");
+            getch();
+            system("clear");
+            puts(HEADER);
+            putc('\n', stdout);
+        }
+    }
+    puts("Press any key to continue;");
+    getch();
+
+    if(temp_product)
+        product_destroy(temp_product);
+
+    return errors;
 }

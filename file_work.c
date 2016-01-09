@@ -10,75 +10,46 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include "input_check.h"
 #include "my_conio.h"
-
-#define PATH_LEN 255
-
-#define MARK "~=Simple C data file from 9-th lab. work=~01\n"
-
-#define MARK_LEN (int)strlen(MARK) - 3
-
-// Remake!
-//void mkdirp(char* path)
-//{
-//    char* dir_cmd = NULL;
-//    char* slash_pos = NULL;
-//    char base_cmd[] = "mkdir -p ";
-
-//    slash_pos = strrchr(path, '/');
-
-//    if(slash_pos != NULL)
-//    {
-//        dir_cmd = (char*)calloc(strlen(base_cmd) + strlen(path) - \
-//                                strlen(slash_pos), sizeof(char));
-//        slash_pos[0] = '\0';
-//        strcpy(dir_cmd, base_cmd);
-//        strcat(dir_cmd, path);
-//        system(dir_cmd);
-//        slash_pos[0] = '/';
-//    }
-//}
+#include "file_work.h"
 
 
-char* get_basedir()
-{
-    char* basedir;
-    char buff[PATH_LEN + 1];
-
-    basedir = getcwd(buff, PATH_LEN + 1);
-
-    return basedir;
-}
-
-int is_exist(char *path)
+int file_exist(char* path)
 {
     struct stat buffer;
     return (stat(path, &buffer) == 0);
 }
 
 
-FILE* file_create(char *path)
+FILE* file_create(char* path)
 {
-    FILE* to_create;
+    FILE* data_file;
 
     int exist = 0;
     int rewrite = 0;
     int incorrect_choice = 0;
 
     char choice = 0;
-    char* res_path = NULL;
-    char buffer[BUFSIZ];
+    char new_path[FPATH_LEN + 1];
 
-    exist = is_exist(path);
+    char* last_slash_pos = NULL;
 
+    last_slash_pos = strrchr(path, '/');
 
-
-    if(exist)
+    if(last_slash_pos != NULL)
     {
-        printf("This file already exists; Rewrite? [y/n]\n");
+        last_slash_pos[0] = '\0';
+        mkdir(path, 0755);
+        last_slash_pos[0] = '/';
+    }
+
+    exist = file_exist(path);
+
+    while(exist)
+    {
+        puts("This file already exists; Rewrite? [y/n]");
 
         do
         {
@@ -94,80 +65,58 @@ FILE* file_create(char *path)
 
         if(!rewrite)
         {
-            printf("Input another file name:\n");
-            res_path = (char*)calloc(PATH_LEN, sizeof(char));
-            string_input(stdin, PATH_LEN, res_path, 0);
-            to_create = file_create(res_path);
-            free(res_path);
+            puts("Input another file name:");
+            string_input(stdin, FPATH_LEN, new_path, 0);
+            exist = file_exist(new_path);
         }
         else
-        {
-            if((to_create = fopen(path, "wt+")) == NULL)
-                puts("Cannot create the file..\n");
-            else
-            {
-                setbuf(to_create, buffer);
-                fputs(MARK, to_create);
-            }
-        }
-
+            exist = 0;
     }
+
+    data_file = fopen(path, "wt+");
+
+    if(data_file == NULL)
+        puts("\tCannot create the file..");
     else
-    {
-        if((to_create = fopen(path, "wt+")) == NULL)
-            puts("Cannot create the file..\n");
-        else
-        {
-            setbuf(to_create, buffer);
-            fputs(MARK, to_create);
-        }
-    }
+        fputs(MARK, data_file);
 
-    return to_create;
+    return data_file;
 }
 
 
 FILE* file_open(char *path)
 {
-    FILE* to_open;
+    FILE* data_file = NULL;
 
-    char check[MARK_LEN];
-    char* mark = MARK;
-    char buffer[BUFSIZ];
+    char check[MARK_LEN + 1];
 
-    int is_opened = 0;
-    int exist = 0;
-
-    exist = is_exist(path);
-
-    if(exist)
+    if(file_exist(path))
     {
         chmod(path, 0600);
 
-        is_opened = (to_open = fopen(path, "rt+")) != NULL;
+        data_file = fopen(path, "rt+");
 
-        if(is_opened)
+        if(data_file != NULL)
         {
-            setbuf(to_open, buffer);
-            fseek(to_open, 0L, SEEK_SET);
-            fgets(check, MARK_LEN, to_open);
-            check[MARK_LEN - 1] = '\n';
-            is_opened = strncmp(check, mark, MARK_LEN);
-            if(!is_opened)
-                return to_open;
-            else
-                puts("\tIncorrect file..\n");
+            fseek(data_file, 0L, SEEK_SET);
+            fgets(check, MARK_LEN + 1, data_file);
+
+            if(strncmp(check, MARK, MARK_LEN))
+            {
+                puts("\tIncorrect file..");
+                data_file = NULL;
+            }
         }
     }
     else
-        puts("\tNo such file or directory..\n");
+        puts("\tNo such file or directory;");
 
-    return NULL;
+    return data_file;
 }
 
 
 void file_close(FILE* file)
 {
-    fchmod(fileno(file), 0600);
+    fchmod(fileno(file), 0400);
     fclose(file);
 }

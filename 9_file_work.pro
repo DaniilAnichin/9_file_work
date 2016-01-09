@@ -7,11 +7,13 @@ SOURCES += main.c \
     input_check.c \
     my_conio.c \
     file_work.c \
-    sorting.c
+    sorting.c \
+    product.c
 
 HEADERS += \
     input_check.h \
     my_conio.h \
     file_work.h \
-    sorting.h
+    sorting.h \
+    product.h
 
