@@ -100,7 +100,7 @@ product* product_update(product* old_product)
                 if((errors = (strpbrk(new_name, ESCAPE_SEQ) != NULL)))
                     printf("\tTry again, incorrect symbols\n");
             }while(errors);
-            old_product->name = new_name;
+            strcpy(old_product->name, new_name);
         }
             break;
         case 'p':

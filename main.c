@@ -61,6 +61,8 @@ int start_run()
 
     do
     {
+        incorrect_choice = 1;
+
         system("clear");
         for(menu_count = 0; menu_count < 5; menu_count++)
             printf("%d) %s", menu_count + 1, start_menu[menu_count]);
@@ -244,6 +246,7 @@ int file_run(FILE* data)
             else
             {
                 work_product = product_read(data, work_line);
+                deleting(data, work_line);
                 product_update(work_product);
                 product_write(data, work_line, work_product);
                 product_destroy(work_product);
